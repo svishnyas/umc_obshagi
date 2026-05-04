@@ -1,0 +1,182 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Dorm {
+  id                 String              @id @default(cuid())
+  slug               String              @unique
+  name               String
+  sub                String
+  color              String
+  accessCodeHash     String
+  users              User[]
+  posts              Post[]
+  events             Event[]
+  roomSquads         RoomSquad[]
+  squadRoomMessages  SquadRoomMessage[]
+  createdAt          DateTime            @default(now())
+}
+
+// Сквад комнаты: мини-группа по общаге + номер комнаты, своя шапка и лента постов (API /api/squads).
+model RoomSquad {
+  id             String              @id @default(cuid())
+  dormId         String
+  dorm           Dorm                @relation(fields: [dormId], references: [id], onDelete: Cascade)
+  roomLabel      String
+  title          String              @default("")
+  bannerColor    String              @default("#1ECC8A")
+  bannerImageUrl String?
+  // Аватар сквада (круг в шапке).
+  avatarUrl      String?
+  createdAt      DateTime            @default(now())
+  members        RoomSquadMember[]
+  posts          Post[]              @relation("SquadWallPosts")
+  voicePosts     Post[]              @relation("RoomVoicePosts")
+  messagesFrom   SquadRoomMessage[]  @relation("SquadMsgFrom")
+  messagesTo     SquadRoomMessage[]  @relation("SquadMsgTo")
+
+  @@unique([dormId, roomLabel])
+  @@index([dormId])
+}
+
+// Личные сообщения между сквадами одной общаги.
+model SquadRoomMessage {
+  id          String    @id @default(cuid())
+  dormId      String
+  dorm        Dorm      @relation(fields: [dormId], references: [id], onDelete: Cascade)
+  fromSquadId String
+  fromSquad   RoomSquad @relation("SquadMsgFrom", fields: [fromSquadId], references: [id], onDelete: Cascade)
+  toSquadId   String
+  toSquad     RoomSquad @relation("SquadMsgTo", fields: [toSquadId], references: [id], onDelete: Cascade)
+  authorId    String
+  author      User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  text        String
+  createdAt   DateTime  @default(now())
+
+  @@index([dormId, createdAt])
+  @@index([fromSquadId, createdAt])
+  @@index([toSquadId, createdAt])
+}
+
+model RoomSquadMember {
+  id       String    @id @default(cuid())
+  squadId  String
+  squad    RoomSquad @relation(fields: [squadId], references: [id], onDelete: Cascade)
+  userId   String
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // SQLite: без нативного enum — "LEADER" | "MEMBER"
+  role     String    @default("MEMBER")
+  joinedAt DateTime  @default(now())
+
+  @@unique([squadId, userId])
+  @@index([userId])
+}
+
+model User {
+  id             String         @id @default(cuid())
+  nickname       String
+  dormId         String
+  dorm           Dorm           @relation(fields: [dormId], references: [id], onDelete: Cascade)
+  room           String?
+  passwordHash   String
+  avatarUrl      String?
+  isOwner        Boolean        @default(false)
+  lastSeenAt     DateTime?
+  posts          Post[]
+  comments       Comment[]
+  likes             Like[]
+  notifications     Notification[]
+  roomSquadMembers   RoomSquadMember[]
+  squadRoomMessages  SquadRoomMessage[]
+  createdAt          DateTime           @default(now())
+
+  @@unique([nickname, dormId])
+  @@index([dormId])
+}
+
+model Post {
+  id        String     @id @default(cuid())
+  authorId  String
+  author    User       @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  dormId    String
+  dorm      Dorm       @relation(fields: [dormId], references: [id], onDelete: Cascade)
+  squadId   String?
+  squad     RoomSquad? @relation("SquadWallPosts", fields: [squadId], references: [id], onDelete: Cascade)
+  // Пост в общей ленте от имени сквада (участник выбрал комнату в композере).
+  asSquadId String?
+  asSquad   RoomSquad? @relation("RoomVoicePosts", fields: [asSquadId], references: [id], onDelete: SetNull)
+  tag       String
+  isAnonymous      Boolean            @default(false)
+  moderationStatus String             @default("APPROVED")
+  text      String
+  createdAt DateTime   @default(now())
+  photos    Photo[]
+  comments  Comment[]
+  likes     Like[]
+
+  @@index([dormId, createdAt])
+  @@index([tag])
+  @@index([squadId, createdAt])
+  @@index([asSquadId])
+}
+
+model Photo {
+  id     String @id @default(cuid())
+  postId String
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+  url    String
+  order  Int    @default(0)
+
+  @@index([postId])
+}
+
+model Comment {
+  id        String    @id @default(cuid())
+  postId    String
+  post      Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  text      String
+  parentId  String?
+  parent    Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: SetNull)
+  replies   Comment[] @relation("CommentReplies")
+  createdAt DateTime  @default(now())
+
+  @@index([postId])
+  @@index([parentId])
+}
+
+model Like {
+  postId String
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([postId, userId])
+}
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  text      String
+  link      String?
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, createdAt])
+}
+
+model Event {
+  id       String  @id @default(cuid())
+  dormId   String?
+  dorm     Dorm?   @relation(fields: [dormId], references: [id], onDelete: SetNull)
+  title    String
+  dateText String
+  color    String
+}
