@@ -66,12 +66,6 @@ export async function GET() {
       { status: 400 },
     );
   }
-  if (myRoom !== roomLabelRaw) {
-    return NextResponse.json(
-      { error: "Можно создать только сквад своей комнаты" },
-      { status: 403 },
-    );
-  }
 
   const alreadyInRoomSquad = await prisma.roomSquadMember.findFirst({
     where: {
