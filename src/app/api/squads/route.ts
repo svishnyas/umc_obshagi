@@ -164,10 +164,38 @@ export async function POST(req: Request) {
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { dormId: true },
+    select: { dormId: true, room: true },
   });
   if (!user) {
     return NextResponse.json({ error: "Пользователь не найден" }, { status: 404 });
+  }
+
+  const myRoom = user.room ? normalizeRoomLabel(user.room) : "";
+  if (!myRoom) {
+    return NextResponse.json(
+      { error: "Сначала укажи номер комнаты в профиле" },
+      { status: 400 },
+    );
+  }
+  if (myRoom !== roomLabelRaw) {
+    return NextResponse.json(
+      { error: "Можно создать только сквад своей комнаты" },
+      { status: 403 },
+    );
+  }
+
+  const alreadyInRoomSquad = await prisma.roomSquadMember.findFirst({
+    where: {
+      userId: session.user.id,
+      squad: { dormId: user.dormId },
+    },
+    select: { id: true },
+  });
+  if (alreadyInRoomSquad) {
+    return NextResponse.json(
+      { error: "Ты уже состоишь в скваде своей комнаты" },
+      { status: 409 },
+    );
   }
 
   const existing = await prisma.roomSquad.findUnique({
