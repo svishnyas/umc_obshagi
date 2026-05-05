@@ -260,7 +260,7 @@ export async function POST(req: Request) {
         /* В скваде комнаты или от имени комнаты — без анонима. */
         isAnonymous:
           resolvedSquadId || resolvedAsSquadId ? false : isAnonymous,
-        moderationStatus: tag === "q" ? "PENDING" : "APPROVED",
+        moderationStatus: "APPROVED",
         text: trimmed,
         photos: {
           create: photoUrls.map((url, i) => ({ url, order: i })),
@@ -283,10 +283,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       ...enriched,
-      moderationMessage:
-        created.moderationStatus === "PENDING"
-          ? "Вопрос отправлен на модерацию и появится после проверки."
-          : undefined,
+      moderationMessage: undefined,
     });
   } catch (e) {
     console.error("[POST /api/posts]", e);
