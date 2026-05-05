@@ -147,22 +147,18 @@ export function ProfilePanel({
         </div>
         <div className="pp-stats">
           <div className="pp-stat">
-            <div className="pp-stat-n" id="pp-np">
-              {profile?.stats?.posts ?? 0}
-            </div>
-            <div className="pp-stat-l">постов</div>
+            <div className="pp-stat-n">{profile?.dormName ?? "—"}</div>
+            <div className="pp-stat-l">Общежитие</div>
           </div>
           <div className="pp-stat">
-            <div className="pp-stat-n" id="pp-nc">
-              {profile?.stats?.comments ?? 0}
-            </div>
-            <div className="pp-stat-l">комментов</div>
+            <div className="pp-stat-n">{profile?.room ? `#${profile.room}` : "Не указана"}</div>
+            <div className="pp-stat-l">Комната</div>
           </div>
           <div className="pp-stat">
-            <div className="pp-stat-n" id="pp-nl">
-              {profile?.stats?.likesReceived ?? 0}
+            <div className="pp-stat-n">
+              {session?.user?.isOwner ? "Староста" : "Студент"}
             </div>
-            <div className="pp-stat-l">лайков</div>
+            <div className="pp-stat-l">Роль</div>
           </div>
         </div>
         <div className="pp-sec">Мои посты</div>

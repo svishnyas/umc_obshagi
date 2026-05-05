@@ -46,7 +46,21 @@ export async function GET() {
     include: { dorm: { select: { slug: true, name: true } } },
   });
 
-  const mapped = events.map(mapEvent);
+  const now = Date.now();
+  const expiredIds = events
+    .filter((e) => {
+      const meta = parseEventMeta(e.dateText);
+      if (!meta.startsAtIso) return false;
+      const ts = new Date(meta.startsAtIso).getTime();
+      return Number.isFinite(ts) && ts < now;
+    })
+    .map((e) => e.id);
+  const expiredSet = new Set(expiredIds);
+  if (expiredIds.length > 0) {
+    await prisma.event.deleteMany({ where: { id: { in: expiredIds } } });
+  }
+
+  const mapped = events.filter((e) => !expiredSet.has(e.id)).map(mapEvent);
   mapped.sort((a, b) => {
     const ad = a.startsAt ? new Date(a.startsAt).getTime() : Number.MAX_SAFE_INTEGER;
     const bd = b.startsAt ? new Date(b.startsAt).getTime() : Number.MAX_SAFE_INTEGER;

@@ -66,6 +66,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ url });
     }
 
+    if (process.env.VERCEL === "1") {
+      const dataUrl = `data:${type};base64,${buf.toString("base64")}`;
+      return NextResponse.json({
+        url: dataUrl,
+        mode: "inline",
+      });
+    }
+
     const path = await saveUploadLocal(subPath, buf, ext);
     return NextResponse.json({ url: path });
   } catch (e) {

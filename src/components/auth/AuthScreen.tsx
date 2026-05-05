@@ -37,7 +37,7 @@ export function AuthScreen() {
             <span className="brand-umc" aria-hidden>
               УМЦ
             </span>
-            <span className="brand-name">УМЦобщаги</span>
+            <span className="brand-name">общаги</span>
             <span className="brand-tag">Beta</span>
           </div>
           <div className="auth-tabs">

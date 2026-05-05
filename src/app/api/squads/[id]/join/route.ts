@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { normalizeRoomLabel } from "@/lib/room-squad";
 import { ROOM_SQUAD_MAX_MEMBERS } from "@/lib/room-squad";
 
 type Ctx = { params: Promise<{ id: string }> };
@@ -15,7 +16,7 @@ export async function POST(_req: Request, ctx: Ctx) {
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { dormId: true },
+    select: { dormId: true, room: true },
   });
   if (!user) {
     return NextResponse.json({ error: "Пользователь не найден" }, { status: 404 });
@@ -27,6 +28,35 @@ export async function POST(_req: Request, ctx: Ctx) {
   });
   if (!squad) {
     return NextResponse.json({ error: "Сквад не найден" }, { status: 404 });
+  }
+
+  const myRoom = user.room ? normalizeRoomLabel(user.room) : "";
+  const squadRoom = normalizeRoomLabel(squad.roomLabel);
+  if (!myRoom) {
+    return NextResponse.json(
+      { error: "Чтобы вступить в сквад, укажи номер комнаты в профиле" },
+      { status: 403 },
+    );
+  }
+  if (myRoom !== squadRoom) {
+    return NextResponse.json(
+      { error: "Вступать можно только в сквад своей комнаты" },
+      { status: 403 },
+    );
+  }
+
+  const alreadyInRoomSquad = await prisma.roomSquadMember.findFirst({
+    where: {
+      userId: session.user.id,
+      squad: { dormId: user.dormId },
+    },
+    select: { squadId: true },
+  });
+  if (alreadyInRoomSquad && alreadyInRoomSquad.squadId !== squadId) {
+    return NextResponse.json(
+      { error: "Ты уже состоишь в скваде своей комнаты" },
+      { status: 409 },
+    );
   }
 
   const existing = await prisma.roomSquadMember.findUnique({

@@ -118,11 +118,6 @@ export function Topbar({
         </button>
       </div>
       <div className="tb-right">
-        {session?.user?.isOwner ? (
-          <Link href="/moderation" className="tb-mod-link">
-            Модерация
-          </Link>
-        ) : null}
         <Link href="/squads" className="tb-squads-cta" title="Сквады комнат — общая страница">
           <svg viewBox="0 0 24 24" aria-hidden>
             <path d="M4 10.5L12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1v-9.5z" />

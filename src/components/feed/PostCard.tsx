@@ -35,15 +35,10 @@ export function PostCard({
   const tagInfo = TAGS[post.tag] ?? TAGS.g;
   const isOwner = Boolean(session?.user?.isOwner);
   const isPendingQuestion = post.tag === "q" && post.moderationStatus === "PENDING";
-  const authorLabel = post.author.isOwner
-    ? `АДМИН • ${post.author.nickname}`
-    : post.author.nickname;
+  const authorLabel = post.author.nickname;
 
   const roomVoiceFrom =
-    post.roomVoiceAuthor &&
-    (post.roomVoiceAuthor.isOwner
-      ? `АДМИН • ${post.roomVoiceAuthor.nickname}`
-      : post.roomVoiceAuthor.nickname);
+    post.roomVoiceAuthor && post.roomVoiceAuthor.nickname;
 
   const roomMono =
     post.roomVoiceRoomLabel?.replace(/\s+/g, "").slice(0, 4) || "?";
@@ -130,7 +125,7 @@ export function PostCard({
           )}
         </div>
         <div>
-          <div className={`post-name ${post.author.isOwner ? "post-name-owner" : ""}`}>
+          <div className="post-name">
             {authorLabel}
             {post.author.room && post.author.room !== "—"
               ? ` · комн. ${post.author.room}`
@@ -142,12 +137,6 @@ export function PostCard({
               {post.roomVoiceAuthor.room && post.roomVoiceAuthor.room !== "—"
                 ? ` · комн. ${post.roomVoiceAuthor.room}`
                 : ""}
-            </div>
-          ) : null}
-          {post.isAnonymous && post.anonymousAuthor && isOwner ? (
-            <div className="post-anon-owner">
-              Реальный автор: {post.anonymousAuthor.nickname}
-              {post.anonymousAuthor.room ? ` · комн. ${post.anonymousAuthor.room}` : ""}
             </div>
           ) : null}
           <div className="post-meta">
